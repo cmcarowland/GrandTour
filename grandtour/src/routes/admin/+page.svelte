@@ -1,0 +1,122 @@
+<script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
+
+	let { data, form } = $props();
+
+	const expandedTeams = $state<Record<string, boolean>>({});
+
+	function toggleTeam(teamId: string) {
+		expandedTeams[teamId] = !expandedTeams[teamId];
+	}
+
+	function isExpanded(teamId: string) {
+		return expandedTeams[teamId] ?? false;
+	}
+</script>
+
+<svelte:head>
+	<title>Grand Tour Admin</title>
+</svelte:head>
+
+<section class="dashboard-shell">
+	<header class="topbar">
+		<div>
+			<p class="eyebrow">Administrator view</p>
+			<h1>{data.activeEvent?.name ?? 'Active event'}</h1>
+			<p class="muted">Track team progress, review skip approvals, and open new events.</p>
+		</div>
+		<div class="topbar-actions">
+			<a class="secondary-button" href="/logout">Logout</a>
+		</div>
+	</header>
+
+	<div class="summary-grid">
+		<div class="summary-card">
+			<span class="summary-label">Active event</span>
+			<strong>{data.activeEvent?.name ?? 'None'}</strong>
+		</div>
+		<div class="summary-card">
+			<span class="summary-label">Pending approvals</span>
+			<strong>{data.pendingApprovals.length}</strong>
+		</div>
+	</div>
+
+	<div class="content-grid">
+		<section class="panel">
+			<div class="panel-header">
+				<h2>Create event</h2>
+			</div>
+			<form method="POST" action="?/createEvent" class="event-form">
+				<label>
+					<span>Event name</span>
+					<input name="name" placeholder="Grand Tour Stop 2" />
+				</label>
+				{#if form?.message}
+					<p class="form-error">{form.message}</p>
+				{/if}
+				<button class="primary-button" type="submit">Create event</button>
+			</form>
+		</section>
+
+		<section class="panel approvals-panel">
+			<div class="panel-header">
+				<h2>Skip approvals</h2>
+			</div>
+			{#if data.pendingApprovals.length}
+				<div class="approval-list">
+					{#each data.pendingApprovals as member}
+						<div class="approval-row">
+							<div>
+								<strong>{member.member.name}</strong>
+								<p class="muted">{member.member.phoneNumber}</p>
+							</div>
+							<div class="row-actions">
+								<form method="POST" action="?/approveSkip">
+									<input type="hidden" name="memberId" value={member.member.id} />
+									<button class="icon-button success" type="submit"><Icon name="check" /></button>
+								</form>
+								<form method="POST" action="?/rejectSkip">
+									<input type="hidden" name="memberId" value={member.member.id} />
+									<button class="icon-button warning" type="submit"><Icon name="warning" /></button>
+								</form>
+							</div>
+						</div>
+					{/each}
+				</div>
+			{:else}
+				<p class="muted">No pending skip approvals.</p>
+			{/if}
+		</section>
+	</div>
+
+	<section class="team-list">
+		{#each data.teams as team}
+			<article class="panel team-panel">
+				<button class="team-toggle" type="button" onclick={() => toggleTeam(team.team.id)}>
+					<div>
+						<h2>{team.team.name}</h2>
+						<p class="muted">{team.checkedCount}/{team.totalCount} accounted for</p>
+					</div>
+					<div class="team-status">
+						{#if team.allAccountedFor}
+							<Icon name="check" />
+						{/if}
+						<span>{isExpanded(team.team.id) ? 'Collapse' : 'Expand'}</span>
+					</div>
+				</button>
+
+				{#if isExpanded(team.team.id)}
+					<div class="member-grid">
+						{#each team.members as member}
+							<div class="member-row">
+								<div><strong>{member.member.name}</strong></div>
+								<div class="muted">{member.member.phoneNumber}</div>
+								<div class="status-chip {member.status}">{member.status}</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</article>
+		{/each}
+	</section>
+</section>
