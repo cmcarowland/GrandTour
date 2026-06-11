@@ -73,11 +73,11 @@
 						<div class="row-actions">
 							<form method="POST" action="?/seen" use:enhance={syncEnhance}>
 								<input type="hidden" name="memberId" value={member.member.id} />
-								<button class="icon-button success" type="submit" aria-label={`Mark ${member.member.name} as seen`} disabled={view.activeEvent ? !view.activeEvent.registrationOpen : true}><Icon name="eye" /></button>
+								<button class="icon-button success" type="submit" aria-label={`Mark ${member.member.name} as seen`} title="I have seen this member" disabled={view.activeEvent ? !view.activeEvent.registrationOpen : true}><Icon name="eye" /></button>
 							</form>
 							<form method="POST" action="?/skipping" use:enhance={syncEnhance}>
 								<input type="hidden" name="memberId" value={member.member.id} />
-								<button class="icon-button warning" type="submit" aria-label={`Mark ${member.member.name} as skipping`} disabled={view.activeEvent ? !view.activeEvent.registrationOpen : true}><Icon name="skip" /></button>
+								<button class="icon-button warning" type="submit" aria-label={`Mark ${member.member.name} as skipping`} title="Member intends to skip the event" disabled={view.activeEvent ? !view.activeEvent.registrationOpen : true}><Icon name="skip" /></button>
 							</form>
 						</div>
 					</div>
