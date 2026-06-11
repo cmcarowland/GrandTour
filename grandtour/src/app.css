@@ -236,6 +236,58 @@ h1 {
 	gap: var(--space-3);
 }
 
+.approvals-panel--full {
+	margin-bottom: var(--space-4);
+}
+
+.ready-panel {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4);
+	margin-bottom: var(--space-4);
+	border-color: rgba(125, 220, 132, 0.35);
+	background:
+		radial-gradient(circle at left, rgba(125, 220, 132, 0.16), transparent 28%),
+		linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent),
+		var(--color-surface);
+}
+
+.ready-copy {
+	flex: 1 1 auto;
+}
+
+.ready-actions {
+	display: flex;
+	justify-content: flex-end;
+	flex: 0 0 auto;
+}
+
+.ready-button {
+	white-space: nowrap;
+}
+
+.ready-icon {
+	display: grid;
+	place-items: center;
+	flex: 0 0 auto;
+	width: 5rem;
+	height: 5rem;
+	border-radius: 999px;
+	background: rgba(125, 220, 132, 0.12);
+	color: var(--color-success);
+}
+
+.ready-icon .icon-svg {
+	width: 2.2rem;
+	height: 2.2rem;
+}
+
+.ready-panel h2 {
+	font-size: clamp(1.6rem, 3vw, 2.4rem);
+	margin-bottom: 0.4rem;
+}
+
 .summary-grid {
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 	margin-bottom: var(--space-4);
@@ -351,7 +403,8 @@ h1 {
 @media (max-width: 720px) {
 	.topbar,
 	.approval-row,
-	.member-row {
+	.member-row,
+	.ready-panel {
 		grid-template-columns: 1fr;
 		display: grid;
 	}
@@ -370,5 +423,18 @@ h1 {
 	.event-footer {
 		flex-direction: column;
 		align-items: flex-start;
+	}
+
+	.ready-panel {
+		gap: var(--space-3);
+	}
+
+	.ready-actions {
+		justify-content: flex-start;
+	}
+
+	.ready-button {
+		width: 100%;
+		white-space: normal;
 	}
 }

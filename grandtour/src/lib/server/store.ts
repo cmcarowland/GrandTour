@@ -60,6 +60,7 @@ function normalizeEvent(event: Event): Event {
 function normalizeState(state: AppState): AppState {
 	return {
 		...state,
+		activeEventId: state.activeEventId || null,
 		events: state.events.map(normalizeEvent)
 	};
 }
@@ -186,6 +187,7 @@ export async function closeActiveEvent(updatedBy: string): Promise<AppState> {
 		event.registrationOpen = false;
 		event.closedAt = new Date().toISOString();
 		event.closedBy = updatedBy;
+		state.activeEventId = null;
 		return state;
 	});
 }

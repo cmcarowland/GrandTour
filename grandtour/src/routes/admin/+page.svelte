@@ -23,6 +23,14 @@
 		};
 	};
 
+	function allTeamsReady() {
+		return view.teams.length > 0 && view.teams.every((team) => team.allAccountedFor);
+	}
+
+	function hasActiveEvent() {
+		return view.activeEvent !== null;
+	}
+
 	$effect(() => {
 		view.setAdminSnapshot(data);
 	});
@@ -67,10 +75,14 @@
 		</div>
 	</div>
 
-	<div class="content-grid">
-		<section class="panel">
+	{#if !hasActiveEvent()}
+		<section class="panel panel--full-width">
 			<div class="panel-header">
-				<h2>Create event</h2>
+				<div>
+					<p class="eyebrow">No active event</p>
+					<h2>Create event</h2>
+					<p class="muted">Start a new registration session to begin tracking teams.</p>
+				</div>
 			</div>
 			<form method="POST" action="?/createEvent" class="event-form" use:enhance={syncEnhance}>
 				<label>
@@ -82,44 +94,58 @@
 				{/if}
 				<button class="primary-button" type="submit">Create event</button>
 			</form>
-			<div class="event-footer">
-				<p class="muted">{view.registrationOpen ? 'Registration is currently open.' : 'This event registration session has ended.'}</p>
-				<form method="POST" action="?/closeRegistration" use:enhance={syncEnhance}>
-					<button class="secondary-button" type="submit" disabled={!view.registrationOpen}>End registration session</button>
-				</form>
-			</div>
 		</section>
-
-		<section class="panel approvals-panel">
-			<div class="panel-header">
-				<h2>Skip approvals</h2>
-			</div>
-			{#if view.pendingApprovals.length}
-				<div class="approval-list">
-					{#each view.pendingApprovals as member}
-						<div class="approval-row">
-							<div>
-								<strong>{member.member.name}</strong>
-								<p class="muted">{member.member.phoneNumber}</p>
-							</div>
-							<div class="row-actions">
-								<form method="POST" action="?/approveSkip" use:enhance={syncEnhance}>
-									<input type="hidden" name="memberId" value={member.member.id} />
-									<button class="icon-button success" type="submit"><Icon name="check" /></button>
-								</form>
-								<form method="POST" action="?/rejectSkip" use:enhance={syncEnhance}>
-									<input type="hidden" name="memberId" value={member.member.id} />
-									<button class="icon-button warning" type="submit"><Icon name="warning" /></button>
-								</form>
-							</div>
-						</div>
-					{/each}
+	{:else if view.registrationOpen}
+		<div class="content-grid">
+			<section class="panel approvals-panel">
+				<div class="panel-header">
+					<h2>Skip approvals</h2>
 				</div>
-			{:else}
-				<p class="muted">No pending skip approvals.</p>
-			{/if}
-		</section>
-	</div>
+				{#if view.pendingApprovals.length}
+					<div class="approval-list">
+						{#each view.pendingApprovals as member}
+							<div class="approval-row">
+								<div>
+									<strong>{member.member.name}</strong>
+									<p class="muted">{member.member.phoneNumber}</p>
+								</div>
+								<div class="row-actions">
+									<form method="POST" action="?/approveSkip" use:enhance={syncEnhance}>
+										<input type="hidden" name="memberId" value={member.member.id} />
+										<button class="icon-button success" type="submit"><Icon name="check" /></button>
+									</form>
+									<form method="POST" action="?/rejectSkip" use:enhance={syncEnhance}>
+										<input type="hidden" name="memberId" value={member.member.id} />
+										<button class="icon-button warning" type="submit"><Icon name="warning" /></button>
+									</form>
+								</div>
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<p class="muted">No pending skip approvals.</p>
+				{/if}
+			</section>
+		</div>
+
+		{#if allTeamsReady()}
+			<section class="panel ready-panel">
+				<div class="ready-icon" aria-hidden="true">
+					<Icon name="check" />
+				</div>
+				<div class="ready-copy">
+					<p class="eyebrow">Teams ready</p>
+					<h2>All teams are ready to go</h2>
+					<p class="muted">Every member has been accounted for.</p>
+				</div>
+				<div class="ready-actions">
+					<form method="POST" action="?/closeRegistration" use:enhance={syncEnhance}>
+						<button class="secondary-button ready-button" type="submit">End registration session</button>
+					</form>
+				</div>
+			</section>
+		{/if}
+	{/if}
 
 	<section class="team-list">
 		{#each view.teams as team}
