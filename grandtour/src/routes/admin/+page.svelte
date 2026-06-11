@@ -96,6 +96,23 @@
 			</form>
 		</section>
 	{:else if view.registrationOpen}
+		{#if allTeamsReady()}
+			<section class="panel ready-panel">
+				<div class="ready-icon" aria-hidden="true">
+					<Icon name="check" />
+				</div>
+				<div class="ready-copy">
+					<p class="eyebrow">Teams ready</p>
+					<h2>All teams are ready to go</h2>
+					<p class="muted">Every member has been accounted for.</p>
+				</div>
+				<div class="ready-actions">
+					<form method="POST" action="?/closeRegistration" use:enhance={syncEnhance}>
+						<button class="secondary-button ready-button" type="submit">End registration session</button>
+					</form>
+				</div>
+			</section>
+		{/if}
 		<div class="content-grid">
 			<section class="panel approvals-panel">
 				<div class="panel-header">
@@ -128,24 +145,7 @@
 			</section>
 		</div>
 
-		{#if allTeamsReady()}
-			<section class="panel ready-panel">
-				<div class="ready-icon" aria-hidden="true">
-					<Icon name="check" />
-				</div>
-				<div class="ready-copy">
-					<p class="eyebrow">Teams ready</p>
-					<h2>All teams are ready to go</h2>
-					<p class="muted">Every member has been accounted for.</p>
-				</div>
-				<div class="ready-actions">
-					<form method="POST" action="?/closeRegistration" use:enhance={syncEnhance}>
-						<button class="secondary-button ready-button" type="submit">End registration session</button>
-					</form>
-				</div>
-			</section>
 		{/if}
-	{/if}
 
 	<section class="team-list">
 		{#each view.teams as team}
