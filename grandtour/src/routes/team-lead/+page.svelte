@@ -61,28 +61,29 @@
 			<p class="muted">{view.team?.checkedCount ?? 0}/{view.team?.totalCount ?? 0} accounted for</p>
 		</div>
 
-		{#if view.activeEvent && !view.activeEvent.registrationOpen}
-			<p class="session-banner">Registration has ended for this event.</p>
+		{#if !view.activeEvent}
+			<p class="session-banner">No Active roll call at this time</p>
+		{:else}
+			<div class="member-grid lead-grid">
+				{#each view.team?.members ?? [] as member}
+					<div class="member-row lead-row">
+						<div><strong>{member.member.name}</strong></div>
+						<div class="muted">{member.member.phoneNumber}</div>
+						<div class="status-chip {member.status}">{getStatusLabel(member.status)}</div>
+						<div class="row-actions">
+							<form method="POST" action="?/seen" use:enhance={syncEnhance}>
+								<input type="hidden" name="memberId" value={member.member.id} />
+								<button class="icon-button success" type="submit" aria-label={`Mark ${member.member.name} as seen`} disabled={view.activeEvent ? !view.activeEvent.registrationOpen : true}><Icon name="eye" /></button>
+							</form>
+							<form method="POST" action="?/skipping" use:enhance={syncEnhance}>
+								<input type="hidden" name="memberId" value={member.member.id} />
+								<button class="icon-button warning" type="submit" aria-label={`Mark ${member.member.name} as skipping`} disabled={view.activeEvent ? !view.activeEvent.registrationOpen : true}><Icon name="skip" /></button>
+							</form>
+						</div>
+					</div>
+				{/each}
+			</div>
 		{/if}
 
-		<div class="member-grid lead-grid">
-			{#each view.team?.members ?? [] as member}
-				<div class="member-row lead-row">
-					<div><strong>{member.member.name}</strong></div>
-					<div class="muted">{member.member.phoneNumber}</div>
-					<div class="status-chip {member.status}">{getStatusLabel(member.status)}</div>
-					<div class="row-actions">
-						<form method="POST" action="?/seen" use:enhance={syncEnhance}>
-							<input type="hidden" name="memberId" value={member.member.id} />
-							<button class="icon-button success" type="submit" aria-label={`Mark ${member.member.name} as seen`} disabled={view.activeEvent ? !view.activeEvent.registrationOpen : true}><Icon name="eye" /></button>
-						</form>
-						<form method="POST" action="?/skipping" use:enhance={syncEnhance}>
-							<input type="hidden" name="memberId" value={member.member.id} />
-							<button class="icon-button warning" type="submit" aria-label={`Mark ${member.member.name} as skipping`} disabled={view.activeEvent ? !view.activeEvent.registrationOpen : true}><Icon name="skip" /></button>
-						</form>
-					</div>
-				</div>
-			{/each}
-		</div>
 	</section>
 </section>
