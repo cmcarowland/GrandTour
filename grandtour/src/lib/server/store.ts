@@ -31,6 +31,39 @@ const defaultTeams: Team[] = [
 	{ id: 'team-ember', name: 'Ember Team', memberIds: ['user-3', 'user-4'] }
 ];
 
+let memoryState: AppState | null = null;
+const stateChangeListeners = new Set<() => void>();
+
+function notifyStateChange(): void {
+	for (const listener of stateChangeListeners) {
+		listener();
+	}
+}
+
+export function subscribeToStateChanges(listener: () => void): () => void {
+	stateChangeListeners.add(listener);
+
+	return () => {
+		stateChangeListeners.delete(listener);
+	};
+}
+
+function normalizeEvent(event: Event): Event {
+	return {
+		...event,
+		registrationOpen: event.registrationOpen ?? true,
+		closedAt: event.closedAt ?? null,
+		closedBy: event.closedBy ?? null
+	};
+}
+
+function normalizeState(state: AppState): AppState {
+	return {
+		...state,
+		events: state.events.map(normalizeEvent)
+	};
+}
+
 function createEmptyAttendance(users: User[]): Record<string, AttendanceRecord> {
 	const attendance: Record<string, AttendanceRecord> = {};
 
@@ -48,7 +81,15 @@ function createDefaultState(): AppState {
 		users: defaultUsers,
 		teams: defaultTeams,
 		events: [
-			{ id: currentEventId, name: 'Grand Tour Check-in', createdAt: new Date().toISOString(), attendance: createEmptyAttendance(defaultUsers) }
+			{
+				id: currentEventId,
+				name: 'Grand Tour Check-in',
+				createdAt: new Date().toISOString(),
+				registrationOpen: true,
+				closedAt: null,
+				closedBy: null,
+				attendance: createEmptyAttendance(defaultUsers)
+			}
 		],
 		activeEventId: currentEventId
 	};
@@ -57,7 +98,7 @@ function createDefaultState(): AppState {
 async function readStateFile(): Promise<AppState> {
 	try {
 		const raw = await readFile(stateFile, 'utf8');
-		return JSON.parse(raw) as AppState;
+		return normalizeState(JSON.parse(raw) as AppState);
 	} catch {
 		const fallback = createDefaultState();
 		await saveState(fallback);
@@ -77,13 +118,20 @@ async function saveState(state: AppState): Promise<void> {
 }
 
 export async function getState(): Promise<AppState> {
-	return readStateFile();
+	if (memoryState) {
+		return memoryState;
+	}
+
+	memoryState = await readStateFile();
+	return memoryState;
 }
 
 export async function updateState(mutator: (state: AppState) => AppState | void): Promise<AppState> {
-	const state = await readStateFile();
-	const nextState = mutator(state) ?? state;
+	const state = await getState();
+	const nextState = normalizeState(mutator(state) ?? state);
+	memoryState = nextState;
 	await saveState(nextState);
+	notifyStateChange();
 	return nextState;
 }
 
@@ -98,7 +146,7 @@ export async function findUserByUsername(username: string): Promise<User | null>
 }
 
 export async function getActiveEvent(state?: AppState): Promise<Event | null> {
-	const data = state ?? (await readStateFile());
+	const data = normalizeState(state ?? (await readStateFile()));
 	return data.events.find((event) => event.id === data.activeEventId) ?? null;
 }
 
@@ -113,16 +161,39 @@ export function getRoleRedirect(user: User): '/admin' | '/team-lead' {
 export async function createEvent(name: string): Promise<AppState> {
 	return updateState((state) => {
 		const attendance = createEmptyAttendance(state.users);
-		const event: Event = { id: `event-${randomUUID()}`, name, createdAt: new Date().toISOString(), attendance };
+		const event: Event = {
+			id: `event-${randomUUID()}`,
+			name,
+			createdAt: new Date().toISOString(),
+			registrationOpen: true,
+			closedAt: null,
+			closedBy: null,
+			attendance
+		};
 		state.events.unshift(event);
 		state.activeEventId = event.id;
+	});
+}
+
+export async function closeActiveEvent(updatedBy: string): Promise<AppState> {
+	return updateState((state) => {
+		const event = state.events.find((entry) => entry.id === state.activeEventId);
+
+		if (!event || !event.registrationOpen) {
+			return state;
+		}
+
+		event.registrationOpen = false;
+		event.closedAt = new Date().toISOString();
+		event.closedBy = updatedBy;
+		return state;
 	});
 }
 
 function updateAttendanceStatus(state: AppState, memberId: string, status: AttendanceStatus, updatedBy: string): AppState {
 	const event = state.events.find((entry) => entry.id === state.activeEventId);
 
-	if (!event) {
+	if (!event || !event.registrationOpen) {
 		return state;
 	}
 
@@ -130,12 +201,31 @@ function updateAttendanceStatus(state: AppState, memberId: string, status: Atten
 	return state;
 }
 
+function toggleAttendanceStatus(
+	state: AppState,
+	memberId: string,
+	activeStatus: AttendanceStatus,
+	toggledStatus: AttendanceStatus,
+	updatedBy: string
+): AppState {
+	const event = state.events.find((entry) => entry.id === state.activeEventId);
+
+	if (!event || !event.registrationOpen) {
+		return state;
+	}
+
+	const currentStatus = event.attendance[memberId]?.status ?? 'unseen';
+	const nextStatus = currentStatus === activeStatus ? 'unseen' : toggledStatus;
+	event.attendance[memberId] = { memberId, status: nextStatus, updatedAt: new Date().toISOString(), updatedBy };
+	return state;
+}
+
 export async function markMemberSeen(memberId: string, updatedBy: string): Promise<AppState> {
-	return updateState((state) => updateAttendanceStatus(state, memberId, 'seen', updatedBy));
+	return updateState((state) => toggleAttendanceStatus(state, memberId, 'seen', 'seen', updatedBy));
 }
 
 export async function markMemberSkipping(memberId: string, updatedBy: string): Promise<AppState> {
-	return updateState((state) => updateAttendanceStatus(state, memberId, 'skip-pending', updatedBy));
+	return updateState((state) => toggleAttendanceStatus(state, memberId, 'skip-pending', 'skip-pending', updatedBy));
 }
 
 export async function approveSkip(memberId: string, updatedBy: string): Promise<AppState> {

@@ -9,7 +9,7 @@
 <section class="auth-shell">
 	<div class="auth-card">
 		<p class="eyebrow">Grand Tour</p>
-		<h1>Field trip attendance</h1>
+		<h1>Class of 2028</h1>
 		<p class="auth-copy">Log in to manage student accountability, team check-ins, and event approvals.</p>
 
 		<form method="POST" class="auth-form">

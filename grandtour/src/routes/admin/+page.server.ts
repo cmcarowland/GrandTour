@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 
-import { approveSkip, buildTeamStatusViews, createEvent, getActiveEvent, getState, hasRole, rejectSkip } from '$lib/server/store';
+import { approveSkip, buildTeamStatusViews, closeActiveEvent, createEvent, getActiveEvent, getState, hasRole, rejectSkip } from '$lib/server/store';
 
 export const load = async ({ locals }) => {
 	if (!locals.user || !hasRole(locals.user, 'Administrator')) {
@@ -15,6 +15,7 @@ export const load = async ({ locals }) => {
 		user: locals.user,
 		activeEvent,
 		teams,
+		registrationOpen: activeEvent?.registrationOpen ?? false,
 		pendingApprovals: teams.flatMap((team) => team.members).filter((member) => member.status === 'skip-pending')
 	};
 };
@@ -33,6 +34,14 @@ export const actions = {
 		}
 
 		await createEvent(name);
+		return { success: true };
+	},
+	closeRegistration: async ({ locals }) => {
+		if (!locals.user || !hasRole(locals.user, 'Administrator')) {
+			throw redirect(303, '/login');
+		}
+
+		await closeActiveEvent(locals.user.username);
 		return { success: true };
 	},
 	approveSkip: async ({ request, locals }) => {

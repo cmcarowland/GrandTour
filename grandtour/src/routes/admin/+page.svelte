@@ -1,9 +1,31 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import Icon from '$lib/components/Icon.svelte';
+	import { broadcastStateChange } from '$lib/client/state-sync';
+	import { grandTourViewState } from '$lib/client/view-state.svelte';
 
 	let { data, form } = $props();
 
+	const view = grandTourViewState;
+
 	const expandedTeams = $state<Record<string, boolean>>({});
+
+	const syncEnhance = () => {
+		return async ({ result, update }: any) => {
+			await update();
+
+			if (result.type === 'success') {
+				broadcastStateChange();
+			}
+
+			await invalidateAll();
+		};
+	};
+
+	$effect(() => {
+		view.setAdminSnapshot(data);
+	});
 
 	function toggleTeam(teamId: string) {
 		expandedTeams[teamId] = !expandedTeams[teamId];
@@ -22,7 +44,7 @@
 	<header class="topbar">
 		<div>
 			<p class="eyebrow">Administrator view</p>
-			<h1>{data.activeEvent?.name ?? 'Active event'}</h1>
+			<h1>{view.activeEvent?.name ?? 'Active event'}</h1>
 			<p class="muted">Track team progress, review skip approvals, and open new events.</p>
 		</div>
 		<div class="topbar-actions">
@@ -33,11 +55,15 @@
 	<div class="summary-grid">
 		<div class="summary-card">
 			<span class="summary-label">Active event</span>
-			<strong>{data.activeEvent?.name ?? 'None'}</strong>
+			<strong>{view.activeEvent?.name ?? 'None'}</strong>
+		</div>
+		<div class="summary-card">
+			<span class="summary-label">Registration</span>
+			<strong>{view.registrationOpen ? 'Open' : 'Closed'}</strong>
 		</div>
 		<div class="summary-card">
 			<span class="summary-label">Pending approvals</span>
-			<strong>{data.pendingApprovals.length}</strong>
+			<strong>{view.pendingApprovals.length}</strong>
 		</div>
 	</div>
 
@@ -46,7 +72,7 @@
 			<div class="panel-header">
 				<h2>Create event</h2>
 			</div>
-			<form method="POST" action="?/createEvent" class="event-form">
+			<form method="POST" action="?/createEvent" class="event-form" use:enhance={syncEnhance}>
 				<label>
 					<span>Event name</span>
 					<input name="name" placeholder="Grand Tour Stop 2" />
@@ -56,26 +82,32 @@
 				{/if}
 				<button class="primary-button" type="submit">Create event</button>
 			</form>
+			<div class="event-footer">
+				<p class="muted">{view.registrationOpen ? 'Registration is currently open.' : 'This event registration session has ended.'}</p>
+				<form method="POST" action="?/closeRegistration" use:enhance={syncEnhance}>
+					<button class="secondary-button" type="submit" disabled={!view.registrationOpen}>End registration session</button>
+				</form>
+			</div>
 		</section>
 
 		<section class="panel approvals-panel">
 			<div class="panel-header">
 				<h2>Skip approvals</h2>
 			</div>
-			{#if data.pendingApprovals.length}
+			{#if view.pendingApprovals.length}
 				<div class="approval-list">
-					{#each data.pendingApprovals as member}
+					{#each view.pendingApprovals as member}
 						<div class="approval-row">
 							<div>
 								<strong>{member.member.name}</strong>
 								<p class="muted">{member.member.phoneNumber}</p>
 							</div>
 							<div class="row-actions">
-								<form method="POST" action="?/approveSkip">
+								<form method="POST" action="?/approveSkip" use:enhance={syncEnhance}>
 									<input type="hidden" name="memberId" value={member.member.id} />
 									<button class="icon-button success" type="submit"><Icon name="check" /></button>
 								</form>
-								<form method="POST" action="?/rejectSkip">
+								<form method="POST" action="?/rejectSkip" use:enhance={syncEnhance}>
 									<input type="hidden" name="memberId" value={member.member.id} />
 									<button class="icon-button warning" type="submit"><Icon name="warning" /></button>
 								</form>
@@ -90,7 +122,7 @@
 	</div>
 
 	<section class="team-list">
-		{#each data.teams as team}
+		{#each view.teams as team}
 			<article class="panel team-panel">
 				<button class="team-toggle" type="button" onclick={() => toggleTeam(team.team.id)}>
 					<div>
