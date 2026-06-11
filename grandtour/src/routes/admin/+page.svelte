@@ -144,37 +144,37 @@
 				{/if}
 			</section>
 		</div>
+		
+		<section class="team-list">
+			{#each view.teams as team}
+				<article class="panel team-panel">
+					<button class="team-toggle" type="button" onclick={() => toggleTeam(team.team.id)}>
+						<div>
+							<h2>{team.team.name}</h2>
+							<p class="muted">{team.checkedCount}/{team.totalCount} accounted for</p>
+						</div>
+						<div class="team-status">
+							{#if team.allAccountedFor}
+								<Icon name="check" />
+							{/if}
+							<span>{isExpanded(team.team.id) ? 'Collapse' : 'Expand'}</span>
+						</div>
+					</button>
+	
+					{#if isExpanded(team.team.id)}
+						<div class="member-grid">
+							{#each team.members as member}
+								<div class="member-row">
+									<div><strong>{member.member.name}</strong></div>
+									<div class="muted">{member.member.phoneNumber}</div>
+									<div class="status-chip {member.status}">{member.status}</div>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</article>
+			{/each}
+		</section>
+	{/if}
 
-		{/if}
-
-	<section class="team-list">
-		{#each view.teams as team}
-			<article class="panel team-panel">
-				<button class="team-toggle" type="button" onclick={() => toggleTeam(team.team.id)}>
-					<div>
-						<h2>{team.team.name}</h2>
-						<p class="muted">{team.checkedCount}/{team.totalCount} accounted for</p>
-					</div>
-					<div class="team-status">
-						{#if team.allAccountedFor}
-							<Icon name="check" />
-						{/if}
-						<span>{isExpanded(team.team.id) ? 'Collapse' : 'Expand'}</span>
-					</div>
-				</button>
-
-				{#if isExpanded(team.team.id)}
-					<div class="member-grid">
-						{#each team.members as member}
-							<div class="member-row">
-								<div><strong>{member.member.name}</strong></div>
-								<div class="muted">{member.member.phoneNumber}</div>
-								<div class="status-chip {member.status}">{member.status}</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</article>
-		{/each}
-	</section>
 </section>
